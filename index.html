@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>化学の4択クイズ</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; background: linear-gradient(135deg, #e7f5ff, #f3e8ff); color: #243047; display: grid; place-items: center; padding: 22px; }
+    main { width: min(100%, 620px); background: white; padding: 30px; border-radius: 22px; box-shadow: 0 15px 42px #394e7426; }
+    .eyebrow { color: #6555b9; font-weight: 800; letter-spacing: .08em; font-size: 14px; }
+    h1 { margin: 8px 0 12px; font-size: clamp(26px, 5vw, 36px); }
+    .sub { color: #68758b; margin-bottom: 24px; }
+    .progress { height: 10px; background: #e8e9f2; border-radius: 10px; overflow: hidden; margin: 10px 0 24px; }
+    #bar { width: 0; height: 100%; background: #7b62e8; transition: width .25s; }
+    #counter { font-size: 14px; color: #697287; font-weight: 700; }
+    #question { font-size: 21px; line-height: 1.65; margin: 14px 0 20px; }
+    #choices { display: grid; gap: 11px; }
+    .choice { background: #f8f9fd; border: 2px solid #e4e7f1; border-radius: 12px; padding: 15px; font-size: 16px; text-align: left; cursor: pointer; color: inherit; transition: background .15s; }
+    .choice:hover:not(:disabled) { background: #f0ecff; border-color: #b7a8fa; }
+    .choice:disabled { cursor: default; }
+    .choice.correct { background: #e7f8ed; border-color: #42b575; }
+    .choice.wrong { background: #fff0f1; border-color: #e47781; }
+    #feedback { margin-top: 18px; padding: 14px; background: #f4f2ff; border-radius: 12px; line-height: 1.65; }
+    .primary { border: 0; background: #7359df; color: white; padding: 13px 23px; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 18px; }
+    .primary:hover { background: #5940c3; }
+    .hidden { display: none !important; }
+    #result { text-align: center; }
+    #score { font-size: 42px; color: #664fd1; font-weight: 900; }
+    footer { color: #7a8395; font-size: 12px; margin-top: 25px; text-align: center; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">CHEMISTRY CHALLENGE 🧪</div>
+    <h1>化学の4択クイズ</h1>
+    <p class="sub">高校〜大学初級レベルの全10問。何問正解できるかな？</p>
+    <section id="quiz">
+      <div id="counter" aria-live="polite"></div>
+      <div class="progress"><div id="bar"></div></div>
+      <h2 id="question"></h2>
+      <div id="choices"></div>
+      <div id="feedback" class="hidden" aria-live="polite"></div>
+      <button id="next" class="primary hidden" type="button">次の問題へ →</button>
+    </section>
+    <section id="result" class="hidden" aria-live="polite">
+      <h2>結果発表 🎉</h2>
+      <p id="score"></p>
+      <p id="message"></p>
+      <button id="restart" class="primary" type="button">もう一度挑戦する</button>
+    </section>
+    <footer>AIを活用して作成した化学学習クイズ</footer>
+  </main>
+  <script>
+    const questions = [
+      {q:"水の化学式はどれ？", a:["H₂O", "CO₂", "O₂", "NaCl"], correct:0, why:"水は水素原子2個と酸素原子1個からできています。"},
+      {q:"原子番号が表しているものはどれ？", a:["中性子の数", "陽子の数", "電子殻の数", "質量数"], correct:1, why:"原子番号は原子核の中の陽子の数を表します。"},
+      {q:"常温・常圧で気体の元素はどれ？", a:["鉄", "銅", "酸素", "銀"], correct:2, why:"酸素は常温・常圧では気体です。"},
+      {q:"pHが7より小さい水溶液は一般に何性？", a:["中性", "塩基性", "酸性", "必ず無色"], correct:2, why:"25℃の水溶液では、pH7未満は酸性です。"},
+      {q:"食塩（塩化ナトリウム）の化学式はどれ？", a:["HCl", "NaCl", "KOH", "NH₃"], correct:1, why:"塩化ナトリウムはナトリウムイオンと塩化物イオンからなる物質です。"},
+      {q:"電子が負っている電荷はどれ？", a:["正の電荷", "負の電荷", "電荷はない", "条件により正負が変わる"], correct:1, why:"電子は負の電荷をもちます。"},
+      {q:"共有結合では、原子どうしが主に何を共有する？", a:["陽子", "中性子", "電子対", "原子核"], correct:2, why:"共有結合は原子間で電子対を共有することによってできます。"},
+      {q:"アボガドロ定数に最も近い値はどれ？", a:["6.02 × 10²³ mol⁻¹", "3.00 × 10⁸ mol⁻¹", "9.81 mol⁻¹", "1.38 × 10⁻²³ mol⁻¹"], correct:0, why:"アボガドロ定数は約6.02 × 10²³ mol⁻¹です。"},
+      {q:"酸化とは、電子の授受で考えるとどの変化？", a:["電子を受け取る", "電子を失う", "中性子を受け取る", "陽子を失う"], correct:1, why:"酸化は電子を失う変化、還元は電子を受け取る変化です。"},
+      {q:"ダイヤモンドと黒鉛に共通する元素はどれ？", a:["ケイ素", "酸素", "炭素", "窒素"], correct:2, why:"どちらも炭素からなる同素体ですが、原子のつながり方が違います。"}
+    ];
+    let index = 0, score = 0, answered = false;
+    const $ = id => document.getElementById(id);
+    function showQuestion() {
+      answered = false;
+      const item = questions[index];
+      $("counter").textContent = `第${index + 1}問 / 全${questions.length}問`;
+      $("bar").style.width = `${index / questions.length * 100}%`;
+      $("question").textContent = item.q;
+      $("choices").replaceChildren();
+      $("feedback").classList.add("hidden");
+      $("next").classList.add("hidden");
+      item.a.forEach((answer, n) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "choice";
+        button.textContent = `${["A", "B", "C", "D"][n]}. ${answer}`;
+        button.addEventListener("click", () => choose(n));
+        $("choices").append(button);
+      });
+    }
+    function choose(n) {
+      if (answered) return;
+      answered = true;
+      const item = questions[index];
+      if (n === item.correct) score++;
+      const buttons = [...$("choices").children];
+      buttons.forEach((button, i) => {
+        button.disabled = true;
+        if (i === item.correct) button.classList.add("correct");
+        else if (i === n) button.classList.add("wrong");
+      });
+      $("feedback").textContent = `${n === item.correct ? "⭕ 正解！" : "❌ 不正解"} ${item.why}`;
+      $("feedback").classList.remove("hidden");
+      $("next").textContent = index === questions.length - 1 ? "結果を見る →" : "次の問題へ →";
+      $("next").classList.remove("hidden");
+    }
+    $("next").addEventListener("click", () => {
+      index++;
+      if (index < questions.length) showQuestion();
+      else {
+        $("quiz").classList.add("hidden");
+        $("result").classList.remove("hidden");
+        $("score").textContent = `${score} / ${questions.length} 問正解`;
+        $("message").textContent = score === 10 ? "満点！化学マスター！" : score >= 7 ? "すごい！よく理解できているね！" : score >= 4 ? "いい調子！解説も復習してみよう。" : "これから少しずつ覚えていこう！";
+      }
+    });
+    $("restart").addEventListener("click", () => {
+      index = 0; score = 0;
+      $("result").classList.add("hidden");
+      $("quiz").classList.remove("hidden");
+      showQuestion();
+    });
+    showQuestion();
+  </script>
+</body>
+</html>
